@@ -1,46 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bloxd.io Scratch Edition</title>
+    <title>Bloxd.io (Scratch Edition)</title>
     <style>
-        /* Background video covers full screen */
-        #bg-video {
+        /* Fullscreen animated canvas background */
+        #bg-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            z-index: -1;
+            background: black;
+            z-index: -2;
         }
 
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
             color: white;
-            text-shadow: 0 0 8px black;
-        }
-
-        h2 {
-            margin: 10px 0 10px 0;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
 
         .top-bar {
-            padding-top: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 20px;
             z-index: 2;
+        }
+
+        h2 {
+            margin: 0;
+            text-align: center;
+            font-size: 3em;
+            text-shadow:
+                0 0 5px #0ff,
+                0 0 10px #0ff,
+                0 0 20px #0ff,
+                0 0 30px #0ff;
         }
 
         .button-container {
             display: flex;
             gap: 20px;
-            padding-bottom: 10px;
         }
 
         button {
@@ -50,92 +56,164 @@
             font-size: 18px;
             border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            transition: transform 0.15s ease, background 0.25s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease, background 0.25s ease;
+            text-shadow:
+                0 0 4px #fff,
+                0 0 8px #fff;
         }
 
-        /* Scratch orange */
-        .scratch-btn {
-            background: #FFAB19;
+        .scratch-btn { 
+            background: #FFAB19; 
+            box-shadow: 0 0 10px #FFAB19, 0 0 20px #FFAB19;
         }
-        .scratch-btn:hover {
+        .scratch-btn:hover { 
             background: #e69917;
+            transform: scale(1.1);
         }
 
-        /* TurboWarp red */
-        .turbowarp-btn {
-            background: #E53935;
+        .turbowarp-btn { 
+            background: #E53935; 
+            box-shadow: 0 0 10px #E53935, 0 0 20px #E53935;
         }
-        .turbowarp-btn:hover {
+        .turbowarp-btn:hover { 
             background: #c62828;
+            transform: scale(1.1);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
-        /* Fullscreen iframe */
         #viewer {
-            flex: 1;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
             border: none;
-            background: rgba(0,0,0,0.3);
-        }
-
-        /* Overlay text centered */
-        #placeholder {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 25px;
-            color: white;
-            text-shadow: 0 0 12px black;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            display: none;
+            z-index: 5;
         }
     </style>
 </head>
 <body>
 
-    <!-- Background video -->
-    <video id="bg-video" autoplay muted loop>
-        <source src="background.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
+<canvas id="bg-canvas"></canvas>
 
-    <!-- Placeholder text -->
-    <div id="placeholder">Please Select Engine</div>
+<div class="top-bar" id="menu">
+    <h2>Bloxd.io</h2>
+    <div class="button-container">
+        <button class="scratch-btn"
+            onclick="loadProject('https://scratch.mit.edu/projects/1215933941/embed')">
+            Play via Scratch
+        </button>
 
-    <div class="top-bar">
-        <h2>Bloxd.io Scratch Edition</h2>
-
-        <div class="button-container">
-            <button class="scratch-btn"
-                onclick="loadProject('https://scratch.mit.edu/projects/1215933941/embed')">
-                Play via Scratch
-            </button>
-
-            <button class="turbowarp-btn"
-                onclick="loadProject('https://turbowarp.org/1215933941/embed?hqpen')">
-                Play via TurboWarp
-            </button>
-        </div>
+        <button class="turbowarp-btn"
+            onclick="loadProject('https://turbowarp.org/1215933941/embed?hqpen')">
+            Play via TurboWarp
+        </button>
     </div>
+</div>
 
-    <!-- Fullscreen iframe -->
-    <iframe id="viewer"></iframe>
+<iframe id="viewer"></iframe>
 
-    <script>
-        const viewer = document.getElementById("viewer");
-        const placeholder = document.getElementById("placeholder");
+<script>
+    const viewer = document.getElementById("viewer");
+    const menu = document.getElementById("menu");
 
-        function loadProject(url) {
-            viewer.src = url;
-            placeholder.style.opacity = 0;   // fade out
-            placeholder.style.pointerEvents = "none";
+    function loadProject(url) {
+        viewer.src = url;
+        viewer.style.display = "block";
+        menu.style.display = "none";
+    }
+
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particlesArray;
+
+    const MAX_PARTICLES = 50;
+    const MAX_DISTANCE = 100;
+    const COLORS = ['#0ff', '#ff0', '#f0f', '#0f0', '#f0ff'];
+
+    function init() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particlesArray = [];
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+            particlesArray.push(new Particle());
         }
-    </script>
+    }
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = (Math.random() - 0.5) * 1.2;
+            this.speedY = (Math.random() - 0.5) * 1.2;
+            this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+
+            if (this.x > canvas.width) this.x = 0;
+            if (this.x < 0) this.x = canvas.width;
+            if (this.y > canvas.height) this.y = 0;
+            if (this.y < 0) this.y = canvas.height;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+    }
+
+    function connect() {
+        for (let a = 0; a < particlesArray.length; a++) {
+            for (let b = a+1; b < particlesArray.length; b++) {
+                let dx = particlesArray[a].x - particlesArray[b].x;
+                let dy = particlesArray[a].y - particlesArray[b].y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance < MAX_DISTANCE) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(${hexToRgb(particlesArray[a].color)},${0.5 - distance / (2*MAX_DISTANCE)})`; // increased alpha
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 4;
+                    ctx.lineWidth = 1.2; // slightly thicker
+                    ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                    ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    function hexToRgb(hex) {
+        let c = hex.replace('#','');
+        if(c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+        const bigint = parseInt(c,16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `${r},${g},${b}`;
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particlesArray.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        connect();
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', init);
+
+    init();
+    animate();
+</script>
 
 </body>
 </html>
