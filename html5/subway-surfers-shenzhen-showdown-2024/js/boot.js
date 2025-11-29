@@ -107,4 +107,3 @@ registerServiceWorker(function ()
         initApp();
     });
 });
-
