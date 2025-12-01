@@ -1,0 +1,11 @@
+body {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+canvas#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
