@@ -8,7 +8,11 @@
 </head>
 
 <body>
-    <canvas id="overlay" tabindex="0"></canvas>
+    <!-- WebGL 3D canvas -->
+    <canvas id="glCanvas"></canvas>
+
+    <!-- UI / HUD canvas -->
+    <canvas id="uiCanvas" tabindex="0"></canvas>
 
     <!-- Core Engine -->
     <script src="js/engine.js"></script>
@@ -22,10 +26,10 @@
     <!-- Texture Generator & Map -->
     <script src="js/textures.js"></script>
 
-    <!-- UI (HUD, Hotbar, Buttons) -->
+    <!-- UI (HUD, Hotbar, Crosshair) -->
     <script src="js/ui.js"></script>
 
-    <!-- Main entry point -->
+    <!-- Main Game Entry -->
     <script src="js/main.js"></script>
 </body>
 </html>
