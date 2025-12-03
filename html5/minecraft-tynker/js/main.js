@@ -1,4 +1,4 @@
-// main.js — Fully fixed version
+// main.js — Now uses glCanvas for WebGL and uiCanvas for UI
 
 (function (global) {
   'use strict';
@@ -8,50 +8,42 @@
   const Main = {
     init: function () {
 
-      // ---------------- Engine Init ----------------
-      Engine.init({ canvasId: "overlay" });
+      // WebGL Engine uses glCanvas
+      Engine.init({ canvasId: "glCanvas" });
       gl = Engine.gl;
 
-      // ---------------- Modules Init ----------------
       Textures.uploadToGL();
       World.init();
       Player.init();
 
-      // DELAY UI INIT BY **2 FRAMES**
+      // START UI AFTER 2 FRAMES (guarantees readiness)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           UI.init();
         });
       });
 
-      // ---------------- World Generation ----------------
-      this._generateWorldAroundPlayer();
+      this._generateWorld();
+      this._setupInteraction();
 
-      // ---------------- Start Loop ----------------
       requestAnimationFrame(this.loop.bind(this));
-
-      // Interaction
-      this._handleBlockInteraction();
     },
 
-    // ---------------- World Gen ----------------
-    _generateWorldAroundPlayer: function () {
-      const radius = 2;
-
-      for (let cx = -radius; cx <= radius; cx++) {
-        for (let cz = -radius; cz <= radius; cz++) {
+    _generateWorld: function () {
+      const r = 2;
+      for (let cx = -r; cx <= r; cx++) {
+        for (let cz = -r; cz <= r; cz++) {
           World.generateChunk(cx, cz);
           World.buildChunkMeshes(cx, cz);
         }
       }
     },
 
-    // ---------------- Block Actions ----------------
-    _handleBlockInteraction: function () {
-      const canvas = document.getElementById("overlay");
+    _setupInteraction: function () {
+      const canvas = document.getElementById("glCanvas");
 
       canvas.addEventListener("mousedown", (e) => {
-        // BREAK
+        // break block
         if (e.button === 0) {
           const hit = Player.raycast(5);
           if (hit) {
@@ -62,7 +54,7 @@
           }
         }
 
-        // PLACE
+        // place block
         if (e.button === 2) {
           const hit = Player.raycast(5);
           if (hit) {
@@ -70,8 +62,8 @@
             const px = hit.x - Math.sign(dir[0]);
             const py = hit.y - Math.sign(dir[1]);
             const pz = hit.z - Math.sign(dir[2]);
-
             const blockId = UI.hotbarItems[UI.selectedBlock - 1];
+
             World.setBlock(px, py, pz, blockId);
 
             const cx = Math.floor(px / 16);
@@ -81,21 +73,19 @@
         }
       });
 
-      window.addEventListener("contextmenu", (e) => e.preventDefault());
+      window.addEventListener("contextmenu", e => e.preventDefault());
     },
 
-    // ---------------- Main Loop ----------------
     loop: function () {
       Player.update();
       this._renderWorld();
 
-      // Draw UI ONLY if ready
-      if (UI.ready) UI.render();
+      if (UI.ready)
+        UI.render();
 
       requestAnimationFrame(this.loop.bind(this));
     },
 
-    // ---------------- Rendering ----------------
     _renderWorld: function () {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -109,18 +99,16 @@
         const chunk = World.chunks[key];
 
         for (let s = 0; s < chunk.sections.length; s++) {
-          const section = chunk.sections[s];
-          if (!section.vertexBuffer) continue;
+          const sec = chunk.sections[s];
+          if (!sec.vertexBuffer) continue;
 
-          gl.bindBuffer(gl.ARRAY_BUFFER, section.vertexBuffer);
+          gl.bindBuffer(gl.ARRAY_BUFFER, sec.vertexBuffer);
           Engine.enableAttributes("program3D");
-
-          gl.drawArrays(gl.TRIANGLES, 0, section.vertexCount);
+          gl.drawArrays(gl.TRIANGLES, 0, sec.vertexCount);
         }
       }
     },
 
-    // ---------------- View Matrix ----------------
     _computeViewMatrix: function () {
       const m = Engine.defaultView.slice();
 
@@ -133,8 +121,8 @@
       const py = Player.y + 1.6;
       const pz = Player.z;
 
-      m[0] = cosY;  m[2] = -sinY;
-      m[8] = sinY;  m[10] = cosY;
+      m[0] = cosY; m[2] = -sinY;
+      m[8] = sinY; m[10] = cosY;
 
       m[5] = cosP;
       m[6] = sinP;
@@ -151,8 +139,6 @@
 
   global.Main = Main;
 
-  window.addEventListener("load", () => {
-    Main.init();
-  });
+  window.addEventListener("load", () => Main.init());
 
 })(window);
