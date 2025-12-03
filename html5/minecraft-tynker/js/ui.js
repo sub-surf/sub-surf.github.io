@@ -1,4 +1,4 @@
-// ui.js — SAFE VERSION (no more null ctx errors)
+// ui.js — Now uses uiCanvas (2D only)
 
 (function (global) {
   'use strict';
@@ -6,7 +6,7 @@
   const UI = {
     canvas: null,
     ctx: null,
-    ready: false, // <— important
+    ready: false,
 
     selectedBlock: 1,
     hotbarSize: 9,
@@ -17,10 +17,10 @@
     lastSecond: 0,
 
     init: function () {
-      this.canvas = document.getElementById('overlay');
+      this.canvas = document.getElementById('uiCanvas');
 
       if (!this.canvas) {
-        console.error("UI.init ERROR: overlay canvas missing");
+        console.error("UI.init ERROR: uiCanvas not found");
         return;
       }
 
@@ -31,6 +31,7 @@
         return;
       }
 
+      // Set initial size
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
 
@@ -42,12 +43,12 @@
       });
 
       this._setupHotbarInput();
+      this.ready = true;
 
-      this.ready = true; // <— UI is now fully ready
-      console.log("UI ready.");
+      console.log("UI READY ✔");
     },
 
-    // ---------------- Hotbar Input ----------------
+    // Hotbar scrolling
     _setupHotbarInput: function () {
       window.addEventListener('wheel', (e) => {
         if (e.deltaY > 0) this.selectedBlock++;
@@ -58,7 +59,6 @@
       });
     },
 
-    // ---------------- Crosshair ----------------
     drawCrosshair: function () {
       const c = this.ctx;
       const w = this.canvas.width;
@@ -78,7 +78,6 @@
       c.stroke();
     },
 
-    // ---------------- Hotbar ----------------
     drawHotbar: function () {
       const c = this.ctx;
       const w = this.canvas.width;
@@ -91,22 +90,24 @@
       for (let i = 0; i < this.hotbarSize; i++) {
         const x = startX + i * size;
 
+        // Box
         c.fillStyle = "rgba(0,0,0,0.4)";
         c.fillRect(x, y, size, size);
 
-        if (i+1 === this.selectedBlock) {
+        // Selected outline
+        if (i + 1 === this.selectedBlock) {
           c.strokeStyle = "yellow";
           c.lineWidth = 3;
           c.strokeRect(x, y, size, size);
         }
 
+        // Block ID text
         c.fillStyle = "white";
         c.font = "16px sans-serif";
         c.fillText(this.hotbarItems[i], x + 14, y + 25);
       }
     },
 
-    // ---------------- Debug ----------------
     drawDebug: function () {
       const c = this.ctx;
       c.fillStyle = "white";
@@ -130,9 +131,8 @@
       this.frameCounter++;
     },
 
-    // ---------------- Frame Render ----------------
     render: function () {
-      if (!this.ready) return; // <— prevents ALL errors
+      if (!this.ready) return;
 
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
