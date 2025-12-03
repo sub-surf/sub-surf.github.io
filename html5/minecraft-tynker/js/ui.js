@@ -1,5 +1,4 @@
-// js/ui.js
-// Draws the crosshair, hotbar, and debug text on the overlay canvas.
+// ui.js — SAFE VERSION (no more null ctx errors)
 
 (function (global) {
   'use strict';
@@ -7,17 +6,34 @@
   const UI = {
     canvas: null,
     ctx: null,
+    ready: false, // <— important
 
-    selectedBlock: 1, // default = dirt
+    selectedBlock: 1,
     hotbarSize: 9,
-    hotbarItems: [1,2,3,4,5,6,7,8,9], // block IDs
+    hotbarItems: [1,2,3,4,5,6,7,8,9],
+
     lastFPS: 0,
     frameCounter: 0,
     lastSecond: 0,
 
     init: function () {
       this.canvas = document.getElementById('overlay');
+
+      if (!this.canvas) {
+        console.error("UI.init ERROR: overlay canvas missing");
+        return;
+      }
+
       this.ctx = this.canvas.getContext('2d');
+
+      if (!this.ctx) {
+        console.error("UI.init ERROR: could not get 2D context");
+        return;
+      }
+
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+
       this.ctx.imageSmoothingEnabled = false;
 
       window.addEventListener('resize', () => {
@@ -26,11 +42,12 @@
       });
 
       this._setupHotbarInput();
+
+      this.ready = true; // <— UI is now fully ready
+      console.log("UI ready.");
     },
 
-    /* ---------------------------------------------------------
-       Hotbar scrolling (mouse wheel)
-    --------------------------------------------------------- */
+    // ---------------- Hotbar Input ----------------
     _setupHotbarInput: function () {
       window.addEventListener('wheel', (e) => {
         if (e.deltaY > 0) this.selectedBlock++;
@@ -41,9 +58,7 @@
       });
     },
 
-    /* ---------------------------------------------------------
-       Draw crosshair in center of screen
-    --------------------------------------------------------- */
+    // ---------------- Crosshair ----------------
     drawCrosshair: function () {
       const c = this.ctx;
       const w = this.canvas.width;
@@ -52,22 +67,18 @@
       c.strokeStyle = "white";
       c.lineWidth = 2;
 
-      // Horizontal
       c.beginPath();
       c.moveTo(w/2 - 8, h/2);
       c.lineTo(w/2 + 8, h/2);
       c.stroke();
 
-      // Vertical
       c.beginPath();
       c.moveTo(w/2, h/2 - 8);
       c.lineTo(w/2, h/2 + 8);
       c.stroke();
     },
 
-    /* ---------------------------------------------------------
-       Draw hotbar
-    --------------------------------------------------------- */
+    // ---------------- Hotbar ----------------
     drawHotbar: function () {
       const c = this.ctx;
       const w = this.canvas.width;
@@ -80,60 +91,49 @@
       for (let i = 0; i < this.hotbarSize; i++) {
         const x = startX + i * size;
 
-        // slot background
         c.fillStyle = "rgba(0,0,0,0.4)";
         c.fillRect(x, y, size, size);
 
-        // selected highlight
         if (i+1 === this.selectedBlock) {
           c.strokeStyle = "yellow";
           c.lineWidth = 3;
           c.strokeRect(x, y, size, size);
         }
 
-        // block text
         c.fillStyle = "white";
         c.font = "16px sans-serif";
         c.fillText(this.hotbarItems[i], x + 14, y + 25);
       }
     },
 
-    /* ---------------------------------------------------------
-       Draw debug text (coords, FPS)
-    --------------------------------------------------------- */
+    // ---------------- Debug ----------------
     drawDebug: function () {
       const c = this.ctx;
+      c.fillStyle = "white";
+      c.font = "14px sans-serif";
 
       const px = Player.x.toFixed(1);
       const py = Player.y.toFixed(1);
       const pz = Player.z.toFixed(1);
 
-      c.fillStyle = "white";
-      c.font = "14px sans-serif";
       c.fillText(`XYZ: ${px}, ${py}, ${pz}`, 10, 20);
       c.fillText(`FPS: ${this.lastFPS}`, 10, 40);
     },
 
-    /* ---------------------------------------------------------
-       FPS counter
-    --------------------------------------------------------- */
     updateFPS: function () {
       const now = performance.now();
-
       if (now - this.lastSecond > 1000) {
         this.lastFPS = this.frameCounter;
         this.frameCounter = 0;
         this.lastSecond = now;
       }
-
       this.frameCounter++;
     },
 
-    /* ---------------------------------------------------------
-       Called every frame
-    --------------------------------------------------------- */
+    // ---------------- Frame Render ----------------
     render: function () {
-      // clear overlay
+      if (!this.ready) return; // <— prevents ALL errors
+
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       this.drawCrosshair();
