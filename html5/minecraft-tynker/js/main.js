@@ -20,7 +20,7 @@
       Textures.uploadToGL();
       World.init();
       Player.init();
-      UI.init();
+      requestAnimationFrame(() => UI.init());
 
       /* -----------------------------------------------------
          Generate chunks around spawn
